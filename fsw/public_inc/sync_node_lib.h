@@ -31,10 +31,19 @@
 ** Includes
 *************************************************************************/
 #include "cfe.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include "background/cJSON.h"
+#include "background/cJSON_Utils.h"
 
 /************************************************************************
 ** Type Definitions
 *************************************************************************/
+
+typedef struct {
+    // TEMP-HOLDER 
+    // TO-DO: PLACE VALUES OF YOLO-ROS MESSAGE HERE
+} rover_state
 
 /*************************************************************************
 ** Exported Functions
@@ -53,7 +62,7 @@
 **  \endreturns
 ** 
 *************************************************************************/
-int32 SYNC_NODE_Function( void ); 
+int32 SYNC_NODE_INJEST( void ); 
 
 #endif /* _sync_node_lib_h_ */
 

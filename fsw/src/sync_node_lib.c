@@ -58,16 +58,40 @@ int32 SYNC_NODE_LibInit(void)
                 
     return CFE_SUCCESS;
  
-}/* End SYNC_NODE_LibInit */
+} /* End SYNC_NODE_LibInit */
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 /*                                                                 */
 /* Sync_node Lib function                                             */ 
 /*                                                                 */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-int32 SYNC_NODE_Function( void ) 
+// TO-DO:
+// 1.) Create the struct based on the YOLO-ROS message. -
+// 2.) File/IO to import JSON file
+// 3.) Parse the JSON into rover-struct
+// 4.) Calculate the distance from the 3D-bounding box
+// 5.) Load the RGB and RGBD images into struct
+// 6.) Return the struct 
+
+int32 SYNC_NODE_INJEST(rover_state rover_states, const char[] fileIOPath) 
 {
    OS_printf ("SYNC_NODE_Function called\n");
+   FILE roverData = OS_open(fileIOPath, OS_READ_ONLY, NULL);
+
+    // TO-DO: Check if pointer is not correct 'file descriptor' int value
+    if(roverData == OS_FS_ERR_INVALID_POINTER){
+        OS_printf("Invalid file pointer...\n\n");
+        return(-1);
+    }
+
+    // Opening up the converted JSON file and parsing it into JSON ds.
+    CJSON *json = cJSON_Parse(roverData);
+    
+    // Error checking
+
+    // Parse out each section into Rover-Library-Struct
+
+    
 
    return(CFE_SUCCESS);
    
