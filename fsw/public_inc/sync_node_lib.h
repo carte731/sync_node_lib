@@ -40,10 +40,88 @@
 ** Type Definitions
 *************************************************************************/
 
+// 2D bounding-box of YOLO detection
 typedef struct {
-    // TEMP-HOLDER 
-    // TO-DO: PLACE VALUES OF YOLO-ROS MESSAGE HERE
-} rover_state
+    double      box_2d_pos_x;
+    double      box_2d_pos_y;
+    double      box_2d_pos_theta;
+    double      box_2d_size_x;
+    double      box_2d_size_y;
+} box2D;
+
+// 3D bounding-box of YOLO detection
+typedef struct {
+    double      box_3d_pos_x;
+    double      box_3d_pos_y;
+    double      box_3d_pos_z;
+    double      box_3d_orient_x;
+    double      box_3d_orient_y;
+    double      box_3d_orient_z;
+    double      box_3d_orient_w;
+    double      box_3d_size_x;
+    double      box_3d_size_y;
+    double      box_3d_size_z;
+    char[10]    box_3d_frame_id;
+} box3D;
+
+// TO-DO: Implement once annotation is updated
+typedef struct {
+    uint32     keypoint_id;
+    float      confidence_score;
+    float      point_x;
+    float      point_y;
+    float      point_z;
+} keypoint3D;
+
+typedef struct {
+    uint32     keypoint_id;
+    float      confidence_score;
+    float      point_x;
+    float      point_y;
+} keypoint2D;
+
+typedef struct {
+    // Rover ID and confidence score
+    uint8       class_id;
+    char[10]    class_name;
+    double      confidenceScore;
+    char[10]    object_id;
+
+    // 2D bounding box for the rover
+    box2D       bounding_box_2d;
+
+    // 3D bounding box for the rover
+    box3D       bounding_box_3d;  
+
+    // Image masking data
+    // Currently not tracking masked data - may implement later if needed
+    //double      mask_height;
+    //double      mask_width;
+    //double[]    mask_data;
+
+    // TO-DO: Implement once annotation is updated
+    // 2D-Keypoints observed in frame
+    keypoint2D[] keypoint_2D_listing;
+
+    // TO-DO: Implement once annotation is updated
+    // 3D-KeyPoints observed in frame
+    char[10]     keyPoint_frame_id;
+    keypoint3D[] keypoint_3D_listing;   
+
+    // Distance to the rover from the camera
+    double      distance;
+
+} rover_state;
+
+// Tracks all the YOLO tracked rovers in the image frame
+typedef struct {
+    // Time stamp
+    utint8  timeStamp_sec;
+    utint8  timeStamp_nanoSec;
+
+    // Array containing all the YOLO tracked rovers in the image frame
+    rover_state[10]     rovers_array;
+} rover_array;
 
 /*************************************************************************
 ** Exported Functions
@@ -62,7 +140,11 @@ typedef struct {
 **  \endreturns
 ** 
 *************************************************************************/
-int32 SYNC_NODE_INJEST( void ); 
+int32 sync_fusion_injest(rover_state rovers, const char[] fileIOPath); 
+//int32 sync_fusion_injest(rover_array rovers, const char[] fileIOPath);  // Future version with an array of rovers based on ID
+void headerParser(rover_state *rover, cJSON *yolo_json);
+void detect2DParser(rover_state *rover, cJSON *detection);
+void detect3DParser(rover_state *rover, cJSON *detection);
 
 #endif /* _sync_node_lib_h_ */
 
