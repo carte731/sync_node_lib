@@ -31,6 +31,7 @@
 ** Includes
 *************************************************************************/
 #include "cfe.h"
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "background/cJSON.h"
@@ -108,7 +109,7 @@ typedef struct {
     char[10]     keyPoint_frame_id;
     keypoint3D[] keypoint_3D_listing;   
 
-    // Distance to the rover from the camera
+    // The euclidean distance to the rover from the camera
     double      distance;
 
 } rover_state;

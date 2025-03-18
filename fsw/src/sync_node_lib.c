@@ -66,12 +66,12 @@ int32 SYNC_NODE_LibInit(void)
 /*                                                                 */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 // TO-DO:
-// 1.) Create the struct based on the YOLO-ROS message. -
-// 2.) File/IO to import JSON file
-// 3.) Parse the JSON into rover-struct
-// 4.) Calculate the distance from the 3D-bounding box
+// 1.) Create the struct based on the YOLO-ROS message. - DONE
+// 2.) File/IO to import JSON file - DONE
+// 3.) Parse the JSON into rover-struct - DONE
+// 4.) Calculate the distance from the 3D-bounding box - DONE
 // 5.) Load the RGB and RGBD images into struct
-// 6.) Return the struct 
+// 6.) Return the struct - DONE
 
 // Opens the JSON file and parses it
 cJSON parseJSON(const char[] fileIOPath){
@@ -100,7 +100,7 @@ cJSON parseJSON(const char[] fileIOPath){
     }
   
     // parse the JSON data into the data-structure
-    cJSON *yolo_json = cJSON_Parse(buffer); 
+    cJSON *yolo_json = cJSON_Parse(input_buffer); 
 
     // Check if the parser parsed the buffer correctly
     if (yolo_json == NULL) { 
@@ -141,11 +141,11 @@ void detectHeader(rover_state *aRover, cJSON *detection){
 
     // The class-ID of the YOLO object defined in the annotation process
     cJSON *class_id = cJSON_GetObjectItemCaseSensitive(detection, "class_id"); 
-    aRover->rover = class_id->valueint;
+    aRover->class_id = class_id->valueint;
 
     // The class name of the object in frame
     cJSON *class_name = cJSON_GetObjectItemCaseSensitive(detection, "class_name"); 
-    aRover->class_name = class_name->valuestring;
+    aRover->class_name = strdup(class_name->valuestring);
 
     // The probability confidence score that the object observed is correctly reported
     cJSON *confidenceScore = cJSON_GetObjectItemCaseSensitive(detection, "score"); 
@@ -153,7 +153,7 @@ void detectHeader(rover_state *aRover, cJSON *detection){
 
     // The tracking ID of the object
     cJSON *object_id = cJSON_GetObjectItemCaseSensitive(detection, "id"); 
-    aRover->object_id = object_id->valuestring;
+    aRover->object_id = strdup(object_id->valuestring);
 }
 
 // Parses 2D-detections for YOLO-JSON
@@ -236,11 +236,11 @@ void detect3DParser(rover_state *rover, cJSON *detection){
 
     // Setting 3D Z-coordinate
     cJSON *bbox_3D_Orientation_z = cJSON_GetObjectItemCaseSensitive(bbox_3D_orientation, "z"); 
-    bound_box_3d->box_3d_pos_w = bbox_3D_Orientation_z->valuedouble;
+    bound_box_3d->box_3d_pos_z = bbox_3D_Orientation_z->valuedouble;
 
     // Setting 3D W-coordinate
     cJSON *bbox_3D_Orientation_w = cJSON_GetObjectItemCaseSensitive(bbox_3D_orientation, "w"); 
-    bound_box_3d->box_3d_pos_z = bbox_3D_Orientation_w->valuedouble;
+    bound_box_3d->box_3d_pos_w = bbox_3D_Orientation_w->valuedouble;
 
 
     //// Getting the size of the 3D bounding box
@@ -262,20 +262,20 @@ void detect3DParser(rover_state *rover, cJSON *detection){
 
     //// Setting the frame-ID of the bounding box
     cJSON *bbox_3D_frame_id = cJSON_GetObjectItemCaseSensitive(bbox_3D, "frame_id"); 
-    bound_box_3d->box_3d_frame_id = bbox_3D_frame_id->valuestring;
+    bound_box_3d->box_3d_frame_id = strdup(bbox_3D_frame_id->valuestring);
 
     // Adding the 2D bounding-box data to main struct
     rover->bounding_box_3d = bound_box_3d;
 }
 
-void sync_fusion_injest(rover_array *rover, const char[] fileIOPath) {
+void sync_fusion_injest(rover_array *rovers, const char[] fileIOPath) {
 //int32 sync_fusion_injest(rover_array rovers, const char[] fileIOPath) { // Future version with an array of rovers based on ID
     // Opens the YOLO-JSON file and mounts it to a cJSON linked-list
     cJSON *yolo_json = parseJSON(fileIOPath);
 
     // Parse out each section into Rover-Library-Struct
     // header parsing
-    headerParser(&aRover, &yolo_json);
+    headerParser(&rovers, &yolo_json);
 
     // Parsing out the array containing 2D and 3D detections
     detections_array = cJSON_GetObjectItemCaseSensitive(yolo_json, "detections");
@@ -297,8 +297,16 @@ void sync_fusion_injest(rover_array *rover, const char[] fileIOPath) {
         // Mounts YOLO 3D bounding box data to rover struct
         detect3DParser(&aRover, &detection);
 
+        // Calculating the square for each 3D coordinate for distance calculation
+        double xCoor = pow(aRover.bounding_box_3d.box_3d_pos_x, 2);
+        double yCoor = pow(aRover.bounding_box_3d.box_3d_pos_y, 2);
+        double zCoor = pow(aRover.bounding_box_3d.box_3d_pos_z, 2);
+
+        // Calculating the distance using euclidean space
+        aRover.distance = sqrt(xCoor + yCoor + zCoor);
+
         // Adding the detection to the tracking rover array
-        rovers_array[pos++] = aRover;
+        rovers[pos++] = aRover;
     }
 
     // Deleting the cJSON structure
