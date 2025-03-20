@@ -352,7 +352,6 @@ int32 sync_fusion_injest(rover_array *rovers, const char *fileIOPath) {
 
     // 2D-Detections parsing
     cJSON_ArrayForEach(detection, detections_array){
-        OS_printf("\nPASS\n");
         // Creating a Rover struct to track the data.
         rover_state aRover;
 
