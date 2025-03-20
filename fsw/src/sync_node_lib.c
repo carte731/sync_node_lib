@@ -90,7 +90,7 @@ cJSON* parseJSON(const char *fileIOPath){
     // Opens the YOLO-JSON file 
     char catStrPath[100];
     strcpy(catStrPath, fileIOPath);
-    strcat(catStrPath, "YOLO-track-2.json");
+    strcat(catStrPath, "YOLO-track.json");
     FILE *roverData = fopen(catStrPath, "r");
 
     //if(roverData < 0){
@@ -322,7 +322,7 @@ void detect3DParser(rover_state *rover, const cJSON *detection){
     // Adding the 2D bounding-box data to main struct
     rover->bounding_box_3d = bound_box_3d;
 }
- 
+
 // Main library function that parses YOLO-JSON file into Rover structs
 int32 sync_fusion_injest(rover_array *rovers, const char *fileIOPath) {
 //int32 sync_fusion_injest(rover_array rovers, const char[] fileIOPath) { // Future version with an array of rovers based on ID
