@@ -41,6 +41,12 @@
 *************************************************************************/
 int32 SYNC_NODE_LibInit(void);
 
+
+cJSON* parseJSON(const char *fileIOPath);
+void headerParser(rover_array *rover, const cJSON *yolo_json);
+void detect2DParser(rover_state *rover, const cJSON *detection);
+void detect3DParser(rover_state *rover, const cJSON *detection);
+
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 /*                                                                 */
 /* Library Initialization Routine                                  */
@@ -74,34 +80,79 @@ int32 SYNC_NODE_LibInit(void)
 // 6.) Return the struct - DONE
 
 // Opens the JSON file and parses it
-cJSON parseJSON(const char[] fileIOPath){
+cJSON* parseJSON(const char *fileIOPath){
+    // Temporarily removing OSAL-fileIO for the moment, too cumbersome
+    //char* test = strdup(fileIOPath);
+    //const char *JSONPath = strcat(test, "YOLO-track.json");
+    //int32 roverData = OS_open(JSONPath, OS_READ_ONLY, 0); 
+
     // Opens the YOLO-JSON file 
-    FILE *roverData = OS_open(fileIOPath + "/trackOutput.json", OS_READ_ONLY, NULL); 
+    char catStrPath[100];
+    strcpy(catStrPath, fileIOPath);
+    strcat(catStrPath, "YOLO-track-2.json");
+    FILE *roverData = fopen(catStrPath, "r");
 
     // TO-DO: Check if pointer is not correct 'file descriptor' int value
-    if(roverData == OS_FS_ERR_INVALID_POINTER){
+    //if(roverData < 0){
+    if(roverData == NULL){
         OS_printf("Invalid file or file doesn't exist...");
-        return(-2);
+        // Creates a NULL JSON object used for error checking
+        cJSON *errorJSON = NULL;
+        
+        //OS_close(roverData);
+        fclose(roverData);
+        return(errorJSON);
     }
-  
-    // Buffer space for raeding the file pointer
-    char input_buffer[2048]; 
+    
+    // Tells the OS to seek the end of the file
+    fseek(roverData, 0L, SEEK_END);
+
+    // Tells the program where in memory space it is.
+    // This allows me to see how large the file-size is.
+    int fileSize = ftell(roverData);
+
+    // Rewind the file point back to the beginning of the file.
+    rewind(roverData);
+    
+    // Buffer space for reading the file pointer 
+    char input_buffer[fileSize]; 
 
     // OSAL FILE-IO operations - copies the file into buffer space
-    int len = OS_read(roverData, input_buffer, sizeof(input_buffer));
-
-    // Uses OSAL to close the file pointer
-    int32 results = OS_close(roverData); 
-
+    // OSAL temporarily removed due to complexity
+    //int readStatus = OS_read(roverData, input_buffer, sizeof(input_buffer));
+    // Copies the file contents into buffer space
+    fread(input_buffer, 1, sizeof(input_buffer), roverData);
+    
+    // OSAL temporarily removed due to complexity
+/*
     // Check if the file was closed correctly
-    if(results == OS_FS_ERROR) {
-        OS_printf("Error in closing the file space...");
-        return(-2)
+    if(readStatus == OS_FS_ERROR)  {
+        OS_printf("Error reading the file...");
+        // Creates a NULL JSON object used for error checking
+        cJSON *errorJSON = NULL;
+        return(errorJSON);
     }
-  
+*/
+
+    // OSAL temporarily removed due to complexity
+    // Uses OSAL to close the file pointer
+    //int32 closeStatus = OS_close(roverData); 
+    fclose(roverData);
+
+    // OSAL temporarily removed due to complexity
+/*
+    // Check if the file was closed correctly
+    if(closeStatus == OS_FS_ERROR) {
+        OS_printf("Error in closing the file space...");
+        // Creates a NULL JSON object used for error checking
+        cJSON *errorJSON = NULL;
+        return(errorJSON);
+    }
+*/  
     // parse the JSON data into the data-structure
     cJSON *yolo_json = cJSON_Parse(input_buffer); 
 
+    
     // Check if the parser parsed the buffer correctly
     if (yolo_json == NULL) { 
 
@@ -111,15 +162,14 @@ cJSON parseJSON(const char[] fileIOPath){
             OS_printf("Error: %s\n", error_ptr); 
         } 
 
-        // Deletes the strucuture if it failed
-        cJSON_Delete(yolo_json); 
-        return(-1) 
+        return(yolo_json);
     } 
 
     return(yolo_json);
 }
 
-void headerParser(rover_array *rover, cJSON *yolo_json){
+//  TO-DO: ADD MEMORY FREE OF CJSON OBJECTS CREATED.
+void headerParser(rover_array *rover, const cJSON *yolo_json){
     // JSON parser grabbing the JSON header
     cJSON *header = cJSON_GetObjectItemCaseSensitive(yolo_json, "header"); 
 
@@ -136,8 +186,9 @@ void headerParser(rover_array *rover, cJSON *yolo_json){
 
 }
 
+//  TO-DO: ADD MEMORY FREE OF CJSON OBJECTS CREATED.
 // Mounting the header data to the rover struct
-void detectHeader(rover_state *aRover, cJSON *detection){
+void detectHeader(rover_state *aRover, const cJSON *detection){
 
     // The class-ID of the YOLO object defined in the annotation process
     cJSON *class_id = cJSON_GetObjectItemCaseSensitive(detection, "class_id"); 
@@ -145,7 +196,7 @@ void detectHeader(rover_state *aRover, cJSON *detection){
 
     // The class name of the object in frame
     cJSON *class_name = cJSON_GetObjectItemCaseSensitive(detection, "class_name"); 
-    aRover->class_name = strdup(class_name->valuestring);
+    strcat(aRover->class_name, class_name->valuestring);
 
     // The probability confidence score that the object observed is correctly reported
     cJSON *confidenceScore = cJSON_GetObjectItemCaseSensitive(detection, "score"); 
@@ -153,11 +204,14 @@ void detectHeader(rover_state *aRover, cJSON *detection){
 
     // The tracking ID of the object
     cJSON *object_id = cJSON_GetObjectItemCaseSensitive(detection, "id"); 
-    aRover->object_id = strdup(object_id->valuestring);
+    strcat(aRover->object_id, object_id->valuestring);
+    
 }
 
+
 // Parses 2D-detections for YOLO-JSON
-void detect2DParser(rover_state *rover, cJSON *detection){
+//  TO-DO: ADD MEMORY FREE OF CJSON OBJECTS CREATED.
+void detect2DParser(rover_state *rover, const cJSON *detection){
     // Creating the internal struct for 2D bounding box
     box2D bound_box_2d;
 
@@ -170,15 +224,15 @@ void detect2DParser(rover_state *rover, cJSON *detection){
     
     // Setting 2D X-coordinate
     cJSON *bbox_2D_x = cJSON_GetObjectItemCaseSensitive(bbox_2D_pose, "x"); 
-    bound_box_2d->box_2d_pos_x = bbox_2D_x->valuedouble;
+    bound_box_2d.box_2d_pos_x = bbox_2D_x->valuedouble;
 
     // Setting 2D Y-coordinate
     cJSON *bbox_2D_y = cJSON_GetObjectItemCaseSensitive(bbox_2D_pose, "y"); 
-    bound_box_2d->box_2d_pos_y = bbox_2D_y->valuedouble;
+    bound_box_2d.box_2d_pos_y = bbox_2D_y->valuedouble;
 
     // Setting the 2D theta
     cJSON *bbox_2D_theta = cJSON_GetObjectItemCaseSensitive(bbox_2D_center, "theta"); 
-    bound_box_2d->box_2d_pos_theta = bbox_2D_theta->valuedouble;
+    bound_box_2d.box_2d_pos_theta = bbox_2D_theta->valuedouble;
 
     // Getting the size of the 2D bounding box
     // Grabbing the X and Y of the bounding box in the image frame
@@ -186,19 +240,20 @@ void detect2DParser(rover_state *rover, cJSON *detection){
 
     // Setting the X-size of the bounding box
     cJSON *bbox_2D_size_x = cJSON_GetObjectItemCaseSensitive(bbox_2D_sizes, "x"); 
-    bound_box_2d->box_2d_size_x = bbox_2D_size_x->valuedouble;
+    bound_box_2d.box_2d_size_x = bbox_2D_size_x->valuedouble;
 
     // Setting the X-size of the bounding box
     cJSON *bbox_2D_size_y = cJSON_GetObjectItemCaseSensitive(bbox_2D_sizes, "y"); 
-    bound_box_2d->box_2d_size_y = bbox_2D_size_y->valuedouble;
+    bound_box_2d.box_2d_size_y = bbox_2D_size_y->valuedouble;
 
     // Adding the 2D bounding-box data to main struct
     rover->bounding_box_2d = bound_box_2d;
 
 }
 
+//  TO-DO: ADD MEMORY FREE OF CJSON OBJECTS CREATED.
 // Parses 3D-detections for YOLO-JSON
-void detect3DParser(rover_state *rover, cJSON *detection){
+void detect3DParser(rover_state *rover, const cJSON *detection){
     // Creating the internal struct for 3D bounding box
     box3D bound_box_3d;
 
@@ -209,18 +264,18 @@ void detect3DParser(rover_state *rover, cJSON *detection){
     //// Grabbing the X, Y and Z of the bounding box in the image frame
     cJSON *bbox_3D_center = cJSON_GetObjectItemCaseSensitive(bbox_3D, "center"); 
     cJSON *bbox_3D_position = cJSON_GetObjectItemCaseSensitive(bbox_3D_center, "position"); 
-    
+
     // Setting 3D X-coordinate
     cJSON *bbox_3D_x = cJSON_GetObjectItemCaseSensitive(bbox_3D_position, "x"); 
-    bound_box_3d->box_3d_pos_x = bbox_3D_x->valuedouble;
+    bound_box_3d.box_3d_pos_x = bbox_3D_x->valuedouble;
 
     // Setting 3D Y-coordinate
     cJSON *bbox_3D_y = cJSON_GetObjectItemCaseSensitive(bbox_3D_position, "y"); 
-    bound_box_3d->box_3d_pos_y = bbox_3D_y->valuedouble;
+    bound_box_3d.box_3d_pos_y = bbox_3D_y->valuedouble;
 
     // Setting 3D Z-coordinate
     cJSON *bbox_3D_z = cJSON_GetObjectItemCaseSensitive(bbox_3D_position, "z"); 
-    bound_box_3d->box_3d_pos_z = bbox_3D_z->valuedouble;
+    bound_box_3d.box_3d_pos_z = bbox_3D_z->valuedouble;
 
 
     //// Setting the X, Y, Z and W of the 3D orientation bounding box
@@ -228,19 +283,19 @@ void detect3DParser(rover_state *rover, cJSON *detection){
     
     // Setting 3D X-coordinate
     cJSON *bbox_3D_Orientation_x = cJSON_GetObjectItemCaseSensitive(bbox_3D_orientation, "x"); 
-    bound_box_3d->box_3d_pos_x = bbox_3D_Orientation_x->valuedouble;
+    bound_box_3d.box_3d_orient_x = bbox_3D_Orientation_x->valuedouble;
 
     // Setting 3D Y-coordinate
     cJSON *bbox_3D_Orientation_y = cJSON_GetObjectItemCaseSensitive(bbox_3D_orientation, "y"); 
-    bound_box_3d->box_3d_pos_y = bbox_3D_Orientation_y->valuedouble;
+    bound_box_3d.box_3d_orient_y = bbox_3D_Orientation_y->valuedouble;
 
     // Setting 3D Z-coordinate
     cJSON *bbox_3D_Orientation_z = cJSON_GetObjectItemCaseSensitive(bbox_3D_orientation, "z"); 
-    bound_box_3d->box_3d_pos_z = bbox_3D_Orientation_z->valuedouble;
+    bound_box_3d.box_3d_orient_z = bbox_3D_Orientation_z->valuedouble;
 
     // Setting 3D W-coordinate
     cJSON *bbox_3D_Orientation_w = cJSON_GetObjectItemCaseSensitive(bbox_3D_orientation, "w"); 
-    bound_box_3d->box_3d_pos_w = bbox_3D_Orientation_w->valuedouble;
+    bound_box_3d.box_3d_orient_w = bbox_3D_Orientation_w->valuedouble;
 
 
     //// Getting the size of the 3D bounding box
@@ -249,33 +304,48 @@ void detect3DParser(rover_state *rover, cJSON *detection){
 
     // Setting the X-size of the bounding box
     cJSON *bbox_3D_size_x = cJSON_GetObjectItemCaseSensitive(bbox_3D_sizes, "x"); 
-    bound_box_3d->box_3d_size_x = bbox_3D_size_x->valuedouble;
+    bound_box_3d.box_3d_size_x = bbox_3D_size_x->valuedouble;
 
     // Setting the X-size of the bounding box
     cJSON *bbox_3D_size_y = cJSON_GetObjectItemCaseSensitive(bbox_3D_sizes, "y"); 
-    bound_box_3d->box_3d_size_y = bbox_3D_size_y->valuedouble;
+    bound_box_3d.box_3d_size_y = bbox_3D_size_y->valuedouble;
 
     // Setting the Z-size of the bounding box
     cJSON *bbox_3D_size_z = cJSON_GetObjectItemCaseSensitive(bbox_3D_sizes, "z"); 
-    bound_box_3d->box_3d_size_z = bbox_3D_size_z->valuedouble;
+    bound_box_3d.box_3d_size_z = bbox_3D_size_z->valuedouble;
 
 
     //// Setting the frame-ID of the bounding box
     cJSON *bbox_3D_frame_id = cJSON_GetObjectItemCaseSensitive(bbox_3D, "frame_id"); 
-    bound_box_3d->box_3d_frame_id = strdup(bbox_3D_frame_id->valuestring);
+    //bound_box_3d.box_3d_frame_id = strdup(bbox_3D_frame_id->valuestring);
+    strcat(bound_box_3d.box_3d_frame_id, bbox_3D_frame_id->valuestring);
+ 
 
     // Adding the 2D bounding-box data to main struct
     rover->bounding_box_3d = bound_box_3d;
 }
-
-void sync_fusion_injest(rover_array *rovers, const char[] fileIOPath) {
+ 
+//  TO-DO: ADD MEMORY FREE OF CJSON OBJECTS CREATED.
+// 
+int32 sync_fusion_injest(rover_array *rovers, const char *fileIOPath) {
 //int32 sync_fusion_injest(rover_array rovers, const char[] fileIOPath) { // Future version with an array of rovers based on ID
     // Opens the YOLO-JSON file and mounts it to a cJSON linked-list
     cJSON *yolo_json = parseJSON(fileIOPath);
 
+    if(yolo_json == NULL){
+        // Deletes the strucuture if it failed
+        cJSON_Delete(yolo_json); 
+        return(-1);
+    }
+
     // Parse out each section into Rover-Library-Struct
+
     // header parsing
-    headerParser(&rovers, &yolo_json);
+    headerParser(rovers, yolo_json);
+
+    // Creating NULL cJSON objects for iterating over
+    const cJSON *detection = NULL;
+    const cJSON *detections_array = NULL;
 
     // Parsing out the array containing 2D and 3D detections
     detections_array = cJSON_GetObjectItemCaseSensitive(yolo_json, "detections");
@@ -285,28 +355,29 @@ void sync_fusion_injest(rover_array *rovers, const char[] fileIOPath) {
 
     // 2D-Detections parsing
     cJSON_ArrayForEach(detection, detections_array){
+        OS_printf("\nPASS\n");
         // Creating a Rover struct to track the data.
         rover_state aRover;
-        
+
         // Mounts YOLO data header to rover struct
-        detectHeader(&aRover, &detection);
+        detectHeader(&aRover, detection);
 
         // Mounts YOLO 2D bounding box data to rover struct
-        detect2DParser(&aRover, &detection);
+        detect2DParser(&aRover, detection);
 
         // Mounts YOLO 3D bounding box data to rover struct
-        detect3DParser(&aRover, &detection);
+        detect3DParser(&aRover, detection);
 
         // Calculating the square for each 3D coordinate for distance calculation
         double xCoor = pow(aRover.bounding_box_3d.box_3d_pos_x, 2);
         double yCoor = pow(aRover.bounding_box_3d.box_3d_pos_y, 2);
         double zCoor = pow(aRover.bounding_box_3d.box_3d_pos_z, 2);
-
+ 
         // Calculating the distance using euclidean space
         aRover.distance = sqrt(xCoor + yCoor + zCoor);
 
         // Adding the detection to the tracking rover array
-        rovers[pos++] = aRover;
+        rovers->rovers_array[pos++] = aRover;
     }
 
     // Deleting the cJSON structure
@@ -314,7 +385,9 @@ void sync_fusion_injest(rover_array *rovers, const char[] fileIOPath) {
 
     return(CFE_SUCCESS);
    
-} /* End SYNC_NODE_Function */
+}
+
+    /* End SYNC_NODE_Function */
 
 /************************/
 /*  End of File Comment */

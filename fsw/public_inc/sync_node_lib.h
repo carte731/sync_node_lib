@@ -34,8 +34,9 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "background/cJSON.h"
-#include "background/cJSON_Utils.h"
+#include <string.h>
+#include "cJSON.h"
+//#include "cJSON_Utils.h"
 
 /************************************************************************
 ** Type Definitions
@@ -62,7 +63,7 @@ typedef struct {
     double      box_3d_size_x;
     double      box_3d_size_y;
     double      box_3d_size_z;
-    char[10]    box_3d_frame_id;
+    char        box_3d_frame_id[10];
 } box3D;
 
 // TO-DO: Implement once annotation is updated
@@ -84,9 +85,9 @@ typedef struct {
 typedef struct {
     // Rover ID and confidence score
     uint8       class_id;
-    char[10]    class_name;
+    char        class_name[10];
     double      confidenceScore;
-    char[10]    object_id;
+    char        object_id[10];
 
     // 2D bounding box for the rover
     box2D       bounding_box_2d;
@@ -102,12 +103,12 @@ typedef struct {
 
     // TO-DO: Implement once annotation is updated
     // 2D-Keypoints observed in frame
-    keypoint2D[] keypoint_2D_listing;
+    //keypoint2D  keypoint_2D_listing[10];
 
     // TO-DO: Implement once annotation is updated
     // 3D-KeyPoints observed in frame
-    char[10]     keyPoint_frame_id;
-    keypoint3D[] keypoint_3D_listing;   
+    //char         keyPoint_frame_id[10];
+    //keypoint3D   keypoint_3D_listing[10];   
 
     // The euclidean distance to the rover from the camera
     double      distance;
@@ -117,11 +118,11 @@ typedef struct {
 // Tracks all the YOLO tracked rovers in the image frame
 typedef struct {
     // Time stamp
-    utint8  timeStamp_sec;
-    utint8  timeStamp_nanoSec;
+    uint32          timeStamp_sec;
+    uint32          timeStamp_nanoSec;
 
     // Array containing all the YOLO tracked rovers in the image frame
-    rover_state[10]     rovers_array;
+    rover_state     rovers_array[10];
 } rover_array;
 
 /*************************************************************************
@@ -141,11 +142,9 @@ typedef struct {
 **  \endreturns
 ** 
 *************************************************************************/
-int32 sync_fusion_injest(rover_state rovers, const char[] fileIOPath); 
+
+int32 sync_fusion_injest(rover_array *rovers, const char *fileIOPath); 
 //int32 sync_fusion_injest(rover_array rovers, const char[] fileIOPath);  // Future version with an array of rovers based on ID
-void headerParser(rover_state *rover, cJSON *yolo_json);
-void detect2DParser(rover_state *rover, cJSON *detection);
-void detect3DParser(rover_state *rover, cJSON *detection);
 
 #endif /* _sync_node_lib_h_ */
 
