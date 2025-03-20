@@ -81,7 +81,8 @@ int32 SYNC_NODE_LibInit(void)
 
 // Opens the JSON file and parses it
 cJSON* parseJSON(const char *fileIOPath){
-    // Temporarily removing OSAL-fileIO for the moment, too cumbersome
+
+    // NOTE: Temporarily removing OSAL-fileIO for the moment, too cumbersome
     //char* test = strdup(fileIOPath);
     //const char *JSONPath = strcat(test, "YOLO-track.json");
     //int32 roverData = OS_open(JSONPath, OS_READ_ONLY, 0); 
@@ -92,7 +93,6 @@ cJSON* parseJSON(const char *fileIOPath){
     strcat(catStrPath, "YOLO-track-2.json");
     FILE *roverData = fopen(catStrPath, "r");
 
-    // TO-DO: Check if pointer is not correct 'file descriptor' int value
     //if(roverData < 0){
     if(roverData == NULL){
         OS_printf("Invalid file or file doesn't exist...");
@@ -123,7 +123,7 @@ cJSON* parseJSON(const char *fileIOPath){
     // Copies the file contents into buffer space
     fread(input_buffer, 1, sizeof(input_buffer), roverData);
     
-    // OSAL temporarily removed due to complexity
+    // NOTE: OSAL temporarily removed due to complexity
 /*
     // Check if the file was closed correctly
     if(readStatus == OS_FS_ERROR)  {
@@ -134,12 +134,13 @@ cJSON* parseJSON(const char *fileIOPath){
     }
 */
 
-    // OSAL temporarily removed due to complexity
+    // NOTE: OSAL temporarily removed due to complexity
     // Uses OSAL to close the file pointer
     //int32 closeStatus = OS_close(roverData); 
+
     fclose(roverData);
 
-    // OSAL temporarily removed due to complexity
+    // NOTE: OSAL temporarily removed due to complexity
 /*
     // Check if the file was closed correctly
     if(closeStatus == OS_FS_ERROR) {
@@ -168,7 +169,7 @@ cJSON* parseJSON(const char *fileIOPath){
     return(yolo_json);
 }
 
-//  TO-DO: ADD MEMORY FREE OF CJSON OBJECTS CREATED.
+// Parses out the detections header portion into main part of struct 
 void headerParser(rover_array *rover, const cJSON *yolo_json){
     // JSON parser grabbing the JSON header
     cJSON *header = cJSON_GetObjectItemCaseSensitive(yolo_json, "header"); 
@@ -186,7 +187,6 @@ void headerParser(rover_array *rover, const cJSON *yolo_json){
 
 }
 
-//  TO-DO: ADD MEMORY FREE OF CJSON OBJECTS CREATED.
 // Mounting the header data to the rover struct
 void detectHeader(rover_state *aRover, const cJSON *detection){
 
@@ -210,7 +210,6 @@ void detectHeader(rover_state *aRover, const cJSON *detection){
 
 
 // Parses 2D-detections for YOLO-JSON
-//  TO-DO: ADD MEMORY FREE OF CJSON OBJECTS CREATED.
 void detect2DParser(rover_state *rover, const cJSON *detection){
     // Creating the internal struct for 2D bounding box
     box2D bound_box_2d;
@@ -251,7 +250,6 @@ void detect2DParser(rover_state *rover, const cJSON *detection){
 
 }
 
-//  TO-DO: ADD MEMORY FREE OF CJSON OBJECTS CREATED.
 // Parses 3D-detections for YOLO-JSON
 void detect3DParser(rover_state *rover, const cJSON *detection){
     // Creating the internal struct for 3D bounding box
@@ -325,8 +323,7 @@ void detect3DParser(rover_state *rover, const cJSON *detection){
     rover->bounding_box_3d = bound_box_3d;
 }
  
-//  TO-DO: ADD MEMORY FREE OF CJSON OBJECTS CREATED.
-// 
+// Main library function that parses YOLO-JSON file into Rover structs
 int32 sync_fusion_injest(rover_array *rovers, const char *fileIOPath) {
 //int32 sync_fusion_injest(rover_array rovers, const char[] fileIOPath) { // Future version with an array of rovers based on ID
     // Opens the YOLO-JSON file and mounts it to a cJSON linked-list
