@@ -56,7 +56,7 @@ void detect3DParser(rover_state *rover, const cJSON *detection);
 int32 SYNC_NODE_LibInit(void)
 {
     
-    OS_printf ("SYNC_NODE Lib Initialized.  Version %d.%d.%d.%d",
+    OS_printf ("SYNC_NODE Lib Initialized.  Version %d.%d.%d.%d\n",
                 SYNC_NODE_LIB_MAJOR_VERSION,
                 SYNC_NODE_LIB_MINOR_VERSION, 
                 SYNC_NODE_LIB_REVISION, 
@@ -95,7 +95,7 @@ cJSON* parseJSON(const char *fileIOPath){
 
     //if(roverData < 0){
     if(roverData == NULL){
-        OS_printf("Invalid file or file doesn't exist...");
+        OS_printf("Invalid file or file doesn't exist...\n");
         // Creates a NULL JSON object used for error checking
         cJSON *errorJSON = NULL;
         
