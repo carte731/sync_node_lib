@@ -374,6 +374,9 @@ int32 sync_fusion_injest(rover_array *rovers, const char *fileIOPath) {
 
         // Adding the detection to the tracking rover array
         rovers->rovers_array[pos++] = aRover;
+
+        // Tracking how many positions in the array are actually used
+        rovers->arrayLen++;
     }
 
     // Deleting the cJSON structure

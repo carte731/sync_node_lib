@@ -27,6 +27,8 @@
 #ifndef _sync_node_lib_h_
 #define _sync_node_lib_h_
 
+#define MAX_OBJECT_ARRAY_SIZE       10
+
 /************************************************************************
 ** Includes
 *************************************************************************/
@@ -120,9 +122,10 @@ typedef struct {
     // Time stamp
     uint32          timeStamp_sec;
     uint32          timeStamp_nanoSec;
+    uint8           arrayLen;
 
     // Array containing all the YOLO tracked rovers in the image frame
-    rover_state     rovers_array[10];
+    rover_state     rovers_array[MAX_OBJECT_ARRAY_SIZE];
 } rover_array;
 
 /*************************************************************************
