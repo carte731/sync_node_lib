@@ -90,12 +90,22 @@ cJSON* parseJSON(const char *fileIOPath){
     // Opens the YOLO-JSON file 
     char catStrPath[100];
     strcpy(catStrPath, fileIOPath);
-    strcat(catStrPath, "YOLO-track.json");
+    strcat(catStrPath, "/trackOutput.json");
+
+    // Checks if the file exist - if not, just exit
+    if(access(catStrPath, F_OK) != 0){
+        OS_printf("File doesn't exist...\n");
+        // Creates a NULL JSON object used for error checking
+        cJSON *errorJSON = NULL;
+        
+        return(errorJSON);
+    }
+
     FILE *roverData = fopen(catStrPath, "r");
 
-    //if(roverData < 0){
+    // Checks if the file was loaded properly
     if(roverData == NULL){
-        OS_printf("Invalid file or file doesn't exist...\n");
+        OS_printf("Invalid file Input...\n");
         // Creates a NULL JSON object used for error checking
         cJSON *errorJSON = NULL;
         

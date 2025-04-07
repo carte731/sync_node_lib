@@ -38,6 +38,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "cJSON.h"
+#include <unistd.h>
 //#include "cJSON_Utils.h"
 
 /************************************************************************
