@@ -206,7 +206,7 @@ void detectHeader(rover_state *aRover, const cJSON *detection){
 
     // The class name of the object in frame
     cJSON *class_name = cJSON_GetObjectItemCaseSensitive(detection, "class_name"); 
-    strcat(aRover->class_name, class_name->valuestring);
+    strcpy(aRover->class_name, class_name->valuestring);
 
     // The probability confidence score that the object observed is correctly reported
     cJSON *confidenceScore = cJSON_GetObjectItemCaseSensitive(detection, "score"); 
