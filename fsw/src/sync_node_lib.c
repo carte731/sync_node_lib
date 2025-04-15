@@ -357,6 +357,12 @@ int32 sync_fusion_injest(rover_array *rovers, const char *fileIOPath) {
     // Parsing out the array containing 2D and 3D detections
     detections_array = cJSON_GetObjectItemCaseSensitive(yolo_json, "detections");
 
+    // If there are no detections, don't do anything
+    if(cJSON_GetArraySize(detections_array) == 0){
+        cJSON_Delete(yolo_json); 
+        return(-1);
+    }
+
     // Tracks currect index of the detections array
     int pos = 0;
 
