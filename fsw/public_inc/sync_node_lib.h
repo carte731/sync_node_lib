@@ -66,7 +66,7 @@ typedef struct {
     double      box_3d_size_x;
     double      box_3d_size_y;
     double      box_3d_size_z;
-    char        box_3d_frame_id[10];
+    char        box_3d_frame_id[30];
 } box3D;
 
 // TO-DO: Implement once annotation is updated
