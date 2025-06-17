@@ -42,7 +42,8 @@
 int32 SYNC_NODE_LibInit(void);
 
 
-cJSON* parseJSON(const char *fileIOPath);
+cJSON* parse_JSON_file(const char *fileIOPath);
+//cJSON* parseJSON(const char *fileIOPath);
 void headerParser(rover_array *rover, const cJSON *yolo_json);
 void detect2DParser(rover_state *rover, const cJSON *detection);
 void detect3DParser(rover_state *rover, const cJSON *detection);
@@ -80,20 +81,22 @@ int32 SYNC_NODE_LibInit(void)
 // 6.) Return the struct - DONE
 
 // Opens the JSON file and parses it
-cJSON* parseJSON(const char *fileIOPath){
+cJSON* parse_JSON_file(const char *fileIOPath){
+//cJSON* parseJSON(const char *fileIOPath){
 
     // NOTE: Temporarily removing OSAL-fileIO for the moment, too cumbersome
     //char* test = strdup(fileIOPath);
     //const char *JSONPath = strcat(test, "YOLO-track.json");
     //int32 roverData = OS_open(JSONPath, OS_READ_ONLY, 0); 
-
+/*
     // Opens the YOLO-JSON file 
     char catStrPath[100];
     strcpy(catStrPath, fileIOPath);
     strcat(catStrPath, "/trackOutput.json");
-
-    // Checks if the file exist - if not, just exit
-    if(access(catStrPath, F_OK) != 0){
+*/
+    // Double checks if the file exist - if not, just exit
+    //if(access(catStrPath, F_OK) != 0){
+    if(access(fileIOPath, F_OK) != 0){
         OS_printf("File doesn't exist...\n");
         // Creates a NULL JSON object used for error checking
         cJSON *errorJSON = NULL;
@@ -101,7 +104,8 @@ cJSON* parseJSON(const char *fileIOPath){
         return(errorJSON);
     }
 
-    FILE *roverData = fopen(catStrPath, "r");
+    FILE *roverData = fopen(fileIOPath, "r");
+    //FILE *roverData = fopen(catStrPath, "r");
 
     // Checks if the file was loaded properly
     if(roverData == NULL){
@@ -266,8 +270,7 @@ void detect3DParser(rover_state *rover, const cJSON *detection){
     box3D bound_box_3d;
 
     // Have to de-nest the JSON object
-    cJSON *bbox_3D = cJSON_GetObjectItemCaseSensitive(detection, "bbox3d"); 
-
+    cJSON *bbox_3D = cJSON_GetObjectItemCaseSensitive(detection, "bbox3d");
 
     //// Grabbing the X, Y and Z of the bounding box in the image frame
     cJSON *bbox_3D_center = cJSON_GetObjectItemCaseSensitive(bbox_3D, "center"); 
@@ -333,11 +336,61 @@ void detect3DParser(rover_state *rover, const cJSON *detection){
     rover->bounding_box_3d = bound_box_3d;
 }
 
+void detect2DKeypoint(rover_state *rover, const cJSON *detection){
+
+    keypoint2D  keypoint_2D_Arr;
+
+    cJSON *keypoint_2D = cJSON_GetObjectItemCaseSensitive(detection, "keypoints");
+    cJSON *keypoint_2D_array = cJSON_GetObjectItemCaseSensitive(keypoint_2D, "data");
+    cJSON *keypoint_element = NULL;
+
+    cJSON_ArrayForEach(keypoint_element, keypoint_2D_array){
+
+        keypoint_2D_Arr.keypoint_id = cJSON_GetObjectItemCaseSensitive(keypoint_element, "id");
+        keypoint_2D_Arr.confidence_score = cJSON_GetObjectItemCaseSensitive(keypoint_element, "score");
+        
+        cJSON *keypoint_2D_xy = cJSON_GetObjectItemCaseSensitive(keypoint_element, "point");
+        keypoint_2D_Arr.point_x = cJSON_GetObjectItemCaseSensitive(keypoint_2D_xy, "x");
+        keypoint_2D_Arr.point_y = cJSON_GetObjectItemCaseSensitive(keypoint_2D_xy, "y");
+
+    }
+
+    rover->keypoint_2D_listing = keypoint_2D_Arr;
+
+}
+
+void detect3DKeypoint(rover_state *rover, const cJSON *detection){
+
+    keypoint3D   keypoint_3D_Arr;   
+
+    cJSON *keypoint_3D = cJSON_GetObjectItemCaseSensitive(detection, "keypoints3d");
+    cJSON *keypoint_3D_array = cJSON_GetObjectItemCaseSensitive(keypoint_3D, "data");
+    cJSON *keypoint_element = NULL;
+
+    cJSON_ArrayForEach(keypoint_element, keypoint_3D_array){
+
+        keypoint_3D_Arr.keypoint_id = cJSON_GetObjectItemCaseSensitive(keypoint_element, "id");
+        keypoint_3D_Arr.confidence_score = cJSON_GetObjectItemCaseSensitive(keypoint_element, "score");
+        
+        cJSON *keypoint_3D_xyz = cJSON_GetObjectItemCaseSensitive(keypoint_element, "point");
+        keypoint_3D_Arr.point_x = cJSON_GetObjectItemCaseSensitive(keypoint_3D_xyz, "x");
+        keypoint_3D_Arr.point_y = cJSON_GetObjectItemCaseSensitive(keypoint_3D_xyz, "y");
+        keypoint_3D_Arr.point_z = cJSON_GetObjectItemCaseSensitive(keypoint_3D_xyz, "z");
+
+    }
+
+    rover->keypoint_3D_listing = keypoint_3D_Arr;
+
+}
+
+
 // Main library function that parses YOLO-JSON file into Rover structs
-int32 sync_fusion_injest(rover_array *rovers, const char *fileIOPath) {
+int32 ros_msg_parse(rover_array *rovers, const char *fileIOPath) {
 //int32 sync_fusion_injest(rover_array rovers, const char[] fileIOPath) { // Future version with an array of rovers based on ID
     // Opens the YOLO-JSON file and mounts it to a cJSON linked-list
-    cJSON *yolo_json = parseJSON(fileIOPath);
+    //cJSON *yolo_json = parseJSON(fileIOPath);
+    //cJSON *yolo_json = parse_JSON_file(fileIOPath);
+    cJSON *yolo_json = ros_msg_typeCheck(fileIOPath);
 
     if(yolo_json == NULL){
         // Deletes the strucuture if it failed
@@ -400,6 +453,45 @@ int32 sync_fusion_injest(rover_array *rovers, const char *fileIOPath) {
 
     return(CFE_SUCCESS);
    
+}
+
+cJSON* ros_msg_typeCheck(const char *data){
+
+    // Used for checking if string parameter is a JSON string
+    cJSON *jsonCheck = NULL;
+
+    // Creates Yolo-JSON file string for checking
+    char pathCheck[100];
+    strcpy(pathCheck, data);
+    strcat(pathCheck, "/trackOutput.json");
+
+    // Checks if the file exist - if so, mount and return JSON
+    if(access(pathCheck, F_OK) == 0){
+        jsonCheck = parse_JSON_file(rovers, pathCheck);
+
+        // If mounted correctly, return the JSON object
+        if(jsonCheck != NULL){
+            return(jsonCheck);
+        }
+
+    } 
+    
+    // If not a file, check if the string is a JSON string
+    jsonCheck = cJSON_Parse(data);
+    if(jsonCheck != NULL) {
+        return(jsonCheck);
+    }
+
+    // Error handling of the JSON parser
+    // Only triggers if both fileIO and string fail
+    const char *error_ptr = cJSON_GetErrorPtr(); 
+    if (error_ptr != NULL) { 
+        OS_printf("Error: %s\n", error_ptr); 
+    } 
+
+    return(jsonCheck);
+   
+
 }
 
     /* End SYNC_NODE_Function */

@@ -106,12 +106,12 @@ typedef struct {
 
     // TO-DO: Implement once annotation is updated
     // 2D-Keypoints observed in frame
-    //keypoint2D  keypoint_2D_listing[10];
+    keypoint2D  keypoint_2D_listing[10];
 
     // TO-DO: Implement once annotation is updated
     // 3D-KeyPoints observed in frame
-    //char         keyPoint_frame_id[10];
-    //keypoint3D   keypoint_3D_listing[10];   
+    char         keyPoint_frame_id[10];
+    keypoint3D   keypoint_3D_listing[10];   
 
     // The euclidean distance to the rover from the camera
     double      distance;
@@ -147,7 +147,9 @@ typedef struct {
 ** 
 *************************************************************************/
 
-int32 sync_fusion_injest(rover_array *rovers, const char *fileIOPath); 
+int32 ros_msg_parse(rover_array *rovers, const char *data);
+//int32 json_file_injest(rover_array *rovers, const char *fileIOPath); 
+//int32 json_str_injest(rover_array *rovers, const char *jsonData); 
 //int32 sync_fusion_injest(rover_array rovers, const char[] fileIOPath);  // Future version with an array of rovers based on ID
 
 #endif /* _sync_node_lib_h_ */
