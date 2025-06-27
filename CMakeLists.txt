@@ -9,6 +9,11 @@ include_directories(fsw/backend)
 include_directories(${CFECORE_SOURCE_DIR}/src/inc)
 include_directories(${CFEPSP_SOURCE_DIR}/fsw/inc)
 
+# Add these to the app CMake to import Sync_Node_Lib
+# Sync-Node-Lib
+#include_directories(${sync_node_lib_MISSION_DIR}/fsw/public_inc)
+#include_directories(${sync_node_lib_MISSION_DIR}/fsw/backend)
+
 aux_source_directory(fsw/src LIB_SRC_FILES)
 
 # Create the app module

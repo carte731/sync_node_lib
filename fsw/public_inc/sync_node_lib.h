@@ -28,6 +28,8 @@
 #define _sync_node_lib_h_
 
 #define MAX_OBJECT_ARRAY_SIZE       10
+#define MAX_KEYPOINT_ARRAY_SIZE     4
+#define MAX_STR_SIZE                30
 
 /************************************************************************
 ** Includes
@@ -40,6 +42,8 @@
 #include "cJSON.h"
 #include <unistd.h>
 //#include "cJSON_Utils.h"
+#include <sys/types.h>
+#include <sys/stat.h>
 
 /************************************************************************
 ** Type Definitions
@@ -66,31 +70,31 @@ typedef struct {
     double      box_3d_size_x;
     double      box_3d_size_y;
     double      box_3d_size_z;
-    char        box_3d_frame_id[30];
+    char        box_3d_frame_id[MAX_STR_SIZE];
 } box3D;
 
 // TO-DO: Implement once annotation is updated
 typedef struct {
-    uint32     keypoint_id;
-    float      confidence_score;
-    float      point_x;
-    float      point_y;
-    float      point_z;
+    uint32      keypoint_id;
+    double      confidence_score;
+    double      point_x;
+    double      point_y;
+    double      point_z;
 } keypoint3D;
 
 typedef struct {
     uint32     keypoint_id;
-    float      confidence_score;
-    float      point_x;
-    float      point_y;
+    double      confidence_score;
+    double      point_x;
+    double      point_y;
 } keypoint2D;
 
 typedef struct {
     // Rover ID and confidence score
     uint8       class_id;
-    char        class_name[10];
+    char        class_name[MAX_STR_SIZE];
     double      confidenceScore;
-    char        object_id[10];
+    char        object_id[MAX_STR_SIZE];
 
     // 2D bounding box for the rover
     box2D       bounding_box_2d;
@@ -106,12 +110,12 @@ typedef struct {
 
     // TO-DO: Implement once annotation is updated
     // 2D-Keypoints observed in frame
-    keypoint2D  keypoint_2D_listing[10];
+    keypoint2D  keypoint_2D_listing[MAX_KEYPOINT_ARRAY_SIZE];
 
     // TO-DO: Implement once annotation is updated
     // 3D-KeyPoints observed in frame
-    char         keyPoint_frame_id[10];
-    keypoint3D   keypoint_3D_listing[10];   
+    char         keyPoint_frame_id[50];
+    keypoint3D   keypoint_3D_listing[MAX_KEYPOINT_ARRAY_SIZE];   
 
     // The euclidean distance to the rover from the camera
     double      distance;
@@ -120,13 +124,18 @@ typedef struct {
 
 // Tracks all the YOLO tracked rovers in the image frame
 typedef struct {
-    // Time stamp
+
+    // The telemetry header for the struct
+    uint8            TlmHeader[CFE_SB_TLM_HDR_SIZE];
+
+    // ROS2 Time-Stamp
     uint32          timeStamp_sec;
     uint32          timeStamp_nanoSec;
     uint8           arrayLen;
 
     // Array containing all the YOLO tracked rovers in the image frame
     rover_state     rovers_array[MAX_OBJECT_ARRAY_SIZE];
+
 } rover_array;
 
 /*************************************************************************

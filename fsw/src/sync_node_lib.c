@@ -44,6 +44,7 @@ int32 SYNC_NODE_LibInit(void);
 
 cJSON* parse_JSON_file(const char *fileIOPath);
 //cJSON* parseJSON(const char *fileIOPath);
+cJSON* ros_msg_typeCheck(rover_array *rovers, const char *data);
 void headerParser(rover_array *rover, const cJSON *yolo_json);
 void detect2DParser(rover_state *rover, const cJSON *detection);
 void detect3DParser(rover_state *rover, const cJSON *detection);
@@ -166,7 +167,6 @@ cJSON* parse_JSON_file(const char *fileIOPath){
 */  
     // parse the JSON data into the data-structure
     cJSON *yolo_json = cJSON_Parse(input_buffer); 
-
     
     // Check if the parser parsed the buffer correctly
     if (yolo_json == NULL) { 
@@ -338,63 +338,90 @@ void detect3DParser(rover_state *rover, const cJSON *detection){
 
 void detect2DKeypoint(rover_state *rover, const cJSON *detection){
 
-    keypoint2D  keypoint_2D_Arr;
+    keypoint2D  keypoint_2D_Arr[MAX_KEYPOINT_ARRAY_SIZE];
 
     cJSON *keypoint_2D = cJSON_GetObjectItemCaseSensitive(detection, "keypoints");
     cJSON *keypoint_2D_array = cJSON_GetObjectItemCaseSensitive(keypoint_2D, "data");
     cJSON *keypoint_element = NULL;
+    cJSON *tempJSON = NULL;
 
+    int itr = 0;
     cJSON_ArrayForEach(keypoint_element, keypoint_2D_array){
 
-        keypoint_2D_Arr.keypoint_id = cJSON_GetObjectItemCaseSensitive(keypoint_element, "id");
-        keypoint_2D_Arr.confidence_score = cJSON_GetObjectItemCaseSensitive(keypoint_element, "score");
+        keypoint2D  keypoint_2D_Ele;
+
+        // Retrieving the Keypoint ID from JSON object
+        tempJSON = cJSON_GetObjectItemCaseSensitive(keypoint_element, "id");
+        keypoint_2D_Ele.keypoint_id = tempJSON->string;
+
+        // Retrieving the Keypoint confidence-score from JSON object
+        tempJSON = cJSON_GetObjectItemCaseSensitive(keypoint_element, "score");
+        keypoint_2D_Ele.confidence_score = tempJSON->valuedouble;
         
+        // Retrieving the x & Y coordinates from JSON object
         cJSON *keypoint_2D_xy = cJSON_GetObjectItemCaseSensitive(keypoint_element, "point");
-        keypoint_2D_Arr.point_x = cJSON_GetObjectItemCaseSensitive(keypoint_2D_xy, "x");
-        keypoint_2D_Arr.point_y = cJSON_GetObjectItemCaseSensitive(keypoint_2D_xy, "y");
+        // X-COOR
+        tempJSON = cJSON_GetObjectItemCaseSensitive(keypoint_2D_xy, "x");
+        keypoint_2D_Ele.point_x = tempJSON->valuedouble;
+        // Y-COOR
+        tempJSON = cJSON_GetObjectItemCaseSensitive(keypoint_2D_xy, "y");
+        keypoint_2D_Ele.point_y = tempJSON->valuedouble;
 
+        // Adding the new keypoint element to the 
+        rover->keypoint_2D_listing[itr++] = keypoint_2D_Ele;
     }
-
-    rover->keypoint_2D_listing = keypoint_2D_Arr;
 
 }
 
 void detect3DKeypoint(rover_state *rover, const cJSON *detection){
 
-    keypoint3D   keypoint_3D_Arr;   
+
+    keypoint3D  keypoint_3D_Arr[MAX_KEYPOINT_ARRAY_SIZE];
 
     cJSON *keypoint_3D = cJSON_GetObjectItemCaseSensitive(detection, "keypoints3d");
     cJSON *keypoint_3D_array = cJSON_GetObjectItemCaseSensitive(keypoint_3D, "data");
     cJSON *keypoint_element = NULL;
+    cJSON *tempJSON = NULL;
 
+    int itr = 0;
     cJSON_ArrayForEach(keypoint_element, keypoint_3D_array){
 
-        keypoint_3D_Arr.keypoint_id = cJSON_GetObjectItemCaseSensitive(keypoint_element, "id");
-        keypoint_3D_Arr.confidence_score = cJSON_GetObjectItemCaseSensitive(keypoint_element, "score");
+        keypoint3D  keypoint_3D_Ele;
+
+        // Retrieving the Keypoint ID from JSON object
+        tempJSON = cJSON_GetObjectItemCaseSensitive(keypoint_element, "id");
+        keypoint_3D_Ele.keypoint_id = tempJSON->string;
+
+        // Retrieving the Keypoint confidence-score from JSON object
+        tempJSON = cJSON_GetObjectItemCaseSensitive(keypoint_element, "score");
+        keypoint_3D_Ele.confidence_score = tempJSON->valuedouble;
         
-        cJSON *keypoint_3D_xyz = cJSON_GetObjectItemCaseSensitive(keypoint_element, "point");
-        keypoint_3D_Arr.point_x = cJSON_GetObjectItemCaseSensitive(keypoint_3D_xyz, "x");
-        keypoint_3D_Arr.point_y = cJSON_GetObjectItemCaseSensitive(keypoint_3D_xyz, "y");
-        keypoint_3D_Arr.point_z = cJSON_GetObjectItemCaseSensitive(keypoint_3D_xyz, "z");
-
+        // Retrieving the X, Y & Z coordinates from JSON object
+        cJSON *keypoint_3D_xy = cJSON_GetObjectItemCaseSensitive(keypoint_element, "point");
+        // X-COOR
+        tempJSON = cJSON_GetObjectItemCaseSensitive(keypoint_3D_xy, "x");
+        keypoint_3D_Ele.point_x = tempJSON->valuedouble;
+        // Y-COOR
+        tempJSON = cJSON_GetObjectItemCaseSensitive(keypoint_3D_xy, "y");
+        keypoint_3D_Ele.point_y = tempJSON->valuedouble;
+        // Z-COOR
+        tempJSON = cJSON_GetObjectItemCaseSensitive(keypoint_3D_xy, "z");
+        keypoint_3D_Ele.point_z = tempJSON->valuedouble;
+        
+        // Adding the new keypoint element to the 
+        rover->keypoint_3D_listing[itr++] = keypoint_3D_Ele;
     }
-
-    rover->keypoint_3D_listing = keypoint_3D_Arr;
-
 }
 
 
 // Main library function that parses YOLO-JSON file into Rover structs
-int32 ros_msg_parse(rover_array *rovers, const char *fileIOPath) {
-//int32 sync_fusion_injest(rover_array rovers, const char[] fileIOPath) { // Future version with an array of rovers based on ID
-    // Opens the YOLO-JSON file and mounts it to a cJSON linked-list
-    //cJSON *yolo_json = parseJSON(fileIOPath);
-    //cJSON *yolo_json = parse_JSON_file(fileIOPath);
-    cJSON *yolo_json = ros_msg_typeCheck(fileIOPath);
+int32 ros_msg_parse(rover_array *rovers, const char *data) {
+
+    cJSON *yolo_json = ros_msg_typeCheck(rovers, data);
 
     if(yolo_json == NULL){
         // Deletes the strucuture if it failed
-        cJSON_Delete(yolo_json); 
+        cJSON_Delete(yolo_json);
         return(-1);
     }
 
@@ -433,6 +460,12 @@ int32 ros_msg_parse(rover_array *rovers, const char *fileIOPath) {
         // Mounts YOLO 3D bounding box data to rover struct
         detect3DParser(&aRover, detection);
 
+        // Mounts 2D-keypoint data to rover struct
+        detect2DKeypoint(&aRover, detection);
+
+        // Mounts 3D-keypoint data to rover struct
+        detect3DKeypoint(&aRover, detection);
+
         // Calculating the square for each 3D coordinate for distance calculation
         double xCoor = pow(aRover.bounding_box_3d.box_3d_pos_x, 2);
         double yCoor = pow(aRover.bounding_box_3d.box_3d_pos_y, 2);
@@ -455,22 +488,24 @@ int32 ros_msg_parse(rover_array *rovers, const char *fileIOPath) {
    
 }
 
-cJSON* ros_msg_typeCheck(const char *data){
+cJSON* ros_msg_typeCheck(rover_array *rovers, const char *data){
 
     // Used for checking if string parameter is a JSON string
     cJSON *jsonCheck = NULL;
 
     // Creates Yolo-JSON file string for checking
-    char pathCheck[100];
+    int dataLen = strlen(data) + 20;
+    char pathCheck[dataLen];
     strcpy(pathCheck, data);
     strcat(pathCheck, "/trackOutput.json");
-
+    struct stat fileCheck;
+    
     // Checks if the file exist - if so, mount and return JSON
-    if(access(pathCheck, F_OK) == 0){
-        jsonCheck = parse_JSON_file(rovers, pathCheck);
-
-        // If mounted correctly, return the JSON object
-        if(jsonCheck != NULL){
+    if(stat(pathCheck, &fileCheck) == 0){
+        
+        if(S_ISREG(fileCheck.st_mode)){
+            jsonCheck = parse_JSON_file(pathCheck);
+        
             return(jsonCheck);
         }
 
@@ -478,17 +513,19 @@ cJSON* ros_msg_typeCheck(const char *data){
     
     // If not a file, check if the string is a JSON string
     jsonCheck = cJSON_Parse(data);
-    if(jsonCheck != NULL) {
-        return(jsonCheck);
-    }
 
-    // Error handling of the JSON parser
-    // Only triggers if both fileIO and string fail
-    const char *error_ptr = cJSON_GetErrorPtr(); 
-    if (error_ptr != NULL) { 
-        OS_printf("Error: %s\n", error_ptr); 
+    //char *string = cJSON_Print(jsonCheck);
+    //if (string == NULL) {
+    if (jsonCheck == NULL) {
+        const char *error_ptr = cJSON_GetErrorPtr(); 
+        if (error_ptr != NULL) { 
+            OS_printf("Error: %s\n", error_ptr); 
+        } 
+
+        return(NULL);
+
     } 
-
+    
     return(jsonCheck);
    
 
